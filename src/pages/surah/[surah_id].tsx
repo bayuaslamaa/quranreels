@@ -39,6 +39,7 @@ const SurahPage: React.FC = () => {
     const [isUserScrolling, setIsUserScrolling] = useState(false)
     const [selectedVerse, setSelectedVerse] = useState(0)
     const [surahName, setSurahName] = useState("")
+    const [showTranslate, setShowTranslate] = useState(false)
 
     useEffect(() => {
         // Create intersection observer
@@ -273,9 +274,12 @@ const SurahPage: React.FC = () => {
                                 <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
 
                             </div>
-                            <h2 className="text-3xl font-bold mb-2 text-black leading-relaxed">{item?.text?.arab}</h2>
-                            {item?.text?.arab?.length < 180 && <p className="text-gray-500">{item?.text?.transliteration?.en}</p>}
-                            {item?.text?.arab?.length < 180 && <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>}
+                            {!showTranslate ? <h2 className={`${item?.text?.arab.length < 520 ? "text-3xl" : "text-2xl"} font-bold mb-2 text-black leading-relaxed`} onClick={() => setShowTranslate(!showTranslate)}>{item?.text?.arab}</h2>
+                                : <div onClick={() => setShowTranslate(!showTranslate)}>
+                                    <p className="text-gray-500">{item?.text?.transliteration?.en}</p>
+                                    <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>
+                                </div>}
+                            <small className='text-black'>Tap untuk munculkan {!showTranslate ? "terjemahan dan transliterasi" : "ayat"}</small>
                         </div>
                     </div>
                 ))}
