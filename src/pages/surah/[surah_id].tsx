@@ -1,6 +1,7 @@
 // pages/index.tsx
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
+import posthog from 'posthog-js'
 
 // Add these types at the top of the file after the imports
 interface Verse {
@@ -92,6 +93,12 @@ const SurahPage: React.FC = () => {
 
     // Modify the scrollToVerse function to stop audio
     const scrollToVerse = (index: number) => {
+        posthog.capture('verse_navigation', {
+            surah_id,
+            verse_number: index + 1,
+            navigation_type: 'manual'
+        })
+
         if (audioRef.current && !scrollingRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
@@ -223,6 +230,12 @@ const SurahPage: React.FC = () => {
         audio.play();
         setIsPlaying(true);
         setPlayingVerseIndex(index);
+
+        posthog.capture('verse_audio_interaction', {
+            surah_id,
+            verse_number: index + 1,
+            action: isPlaying ? 'pause' : 'play'
+        })
     };
 
     // Add cleanup for component unmount
@@ -237,6 +250,35 @@ const SurahPage: React.FC = () => {
             }
         };
     }, []);
+
+    // Track surah view
+    useEffect(() => {
+        if (surah_id && surahName) {
+            posthog.capture('surah_view', {
+                surah_id,
+                surah_name: surahName
+            })
+        }
+    }, [surah_id, surahName])
+
+    // Track auto-play sequence
+    useEffect(() => {
+        if (autoPlayRef.current) {
+            posthog.capture('auto_play_sequence', {
+                surah_id,
+                starting_verse: playingVerseIndex
+            })
+        }
+    }, [autoPlayRef.current])
+
+    // Track translation toggle
+    const handleTranslationToggle = () => {
+        setShowTranslate(!showTranslate)
+        posthog.capture('translation_toggle', {
+            surah_id,
+            show_translation: !showTranslate
+        })
+    }
 
     console.log({ verses })
     return (
@@ -257,7 +299,9 @@ const SurahPage: React.FC = () => {
                         >
                             ←
                         </button>
-                        Ayat {currentVerseIndex + 1} dari {verses.length}
+                        Ayat
+
+                        <span className='font-semibold'>{currentVerseIndex + 1}</span> dari {verses.length}
                         <button
                             onClick={() => scrollToVerse(Math.min(verses.length - 1, currentVerseIndex + 1))}
                             className="hover:opacity-75"
@@ -319,8 +363,8 @@ const SurahPage: React.FC = () => {
                                 <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
 
                             </div>
-                            {!showTranslate ? <h2 className={`${item?.text?.arab.length < 510 ? "text-[28px]" : "text-2xl"} font-bold mb-2 text-black leading-relaxed`} onClick={() => setShowTranslate(!showTranslate)}>{item?.text?.arab}</h2>
-                                : <div onClick={() => setShowTranslate(!showTranslate)}>
+                            {!showTranslate ? <h2 className={`${item?.text?.arab.length < 510 ? "text-[28px]" : "text-2xl"} font-bold mb-2 text-black leading-relaxed`} onClick={handleTranslationToggle}>{item?.text?.arab}</h2>
+                                : <div onClick={handleTranslationToggle}>
                                     <p className="text-gray-500">{item?.text?.transliteration?.en}</p>
                                     <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>
                                 </div>}

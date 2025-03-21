@@ -1,13 +1,34 @@
 import "@/styles/globals.css";
-import type { AppProps } from "next/app";
+import { useEffect } from 'react';
+import { Router } from 'next/router';
+import posthog from 'posthog-js';
+import { PostHogProvider } from 'posthog-js/react';
+import type { AppProps } from 'next/app';
 
 export default function App({ Component, pageProps }: AppProps) {
-  // You can customize the phone number and message
+
+  useEffect(() => {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY as string, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+      person_profiles: 'identified_only',
+      loaded: (posthog) => {
+        if (process.env.NODE_ENV === 'development') posthog.debug();
+      }
+    });
+
+    const handleRouteChange = () => posthog?.capture('$pageview');
+
+    Router.events.on('routeChangeComplete', handleRouteChange);
+
+    return () => {
+      Router.events.off('routeChangeComplete', handleRouteChange);
+    }
+  }, []);
 
   const whatsappUrl = `https://chat.whatsapp.com/EjXdCLwga5l0eqpONTAlH7`;
 
   return (
-    <>
+    <PostHogProvider client={posthog}>
       <a
         href={whatsappUrl}
         target="_blank"
@@ -26,6 +47,6 @@ export default function App({ Component, pageProps }: AppProps) {
         <span>Feedback & Request</span>
       </a>
       <Component {...pageProps} />
-    </>
+    </PostHogProvider>
   );
 }
