@@ -275,7 +275,7 @@ const SurahPage: React.FC = () => {
                             </div>
                             <h2 className="text-3xl font-bold mb-2 text-black leading-relaxed">{item?.text?.arab}</h2>
                             {item?.text?.arab?.length < 180 && <p className="text-gray-500">{item?.text?.transliteration?.en}</p>}
-                            {item?.text?.arab?.length < 470 && <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>}
+                            {item?.text?.arab?.length < 180 && <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>}
                         </div>
                     </div>
                 ))}
