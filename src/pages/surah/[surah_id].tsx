@@ -24,6 +24,12 @@ interface Verse {
 const SurahPage: React.FC = () => {
     // Add this ref to store current audio instance
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
+    // Add state to track if audio is playing
+    const [isPlaying, setIsPlaying] = useState(false);
+    // Add ref to track if auto-scrolling is in progress
+    const scrollingRef = React.useRef(false);
+    // Add state to track which verse is currently playing
+    const [playingVerseIndex, setPlayingVerseIndex] = useState<number | null>(null);
 
     const router = useRouter()
     const { surah_id, verse } = router?.query
@@ -44,6 +50,13 @@ const SurahPage: React.FC = () => {
                         setCurrentVerseIndex(index)
                         setIsUserScrolling(true)
                         setSelectedVerse(0)
+
+                        // Only stop audio if manual scrolling (not auto-scroll)
+                        if (!scrollingRef.current && audioRef.current) {
+                            audioRef.current.pause();
+                            audioRef.current = null;
+                            setIsPlaying(false);
+                        }
                     }
                 })
             },
@@ -74,9 +87,10 @@ const SurahPage: React.FC = () => {
 
     // Modify the scrollToVerse function to stop audio
     const scrollToVerse = (index: number) => {
-        if (audioRef.current) {
+        if (audioRef.current && !scrollingRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
+            setIsPlaying(false);
         }
         const element = document.querySelector(`[data-index="${index}"]`)
         element?.scrollIntoView({ behavior: 'smooth' })
@@ -122,6 +136,64 @@ const SurahPage: React.FC = () => {
             )
         }
     }, [currentVerseIndex])
+
+    // Modify handleAudioEnd to use setTimeout for better scroll-then-play sequence
+    const handleAudioEnd = (currentIndex: number) => {
+        setIsPlaying(false);
+        setPlayingVerseIndex(null);
+        audioRef.current = null;
+
+        if (currentIndex < verses.length - 1) {
+            scrollingRef.current = true;
+            scrollToVerse(currentIndex + 1);
+
+            setTimeout(() => {
+                const nextAudio = new Audio(verses[currentIndex + 1]?.audio?.primary);
+                audioRef.current = nextAudio;
+                nextAudio.addEventListener('ended', () => handleAudioEnd(currentIndex + 1));
+                nextAudio.play();
+                setIsPlaying(true);
+                setPlayingVerseIndex(currentIndex + 1);
+                scrollingRef.current = false;
+            }, 1000);
+        }
+    };
+
+    // Modify playAudio function to handle pause/play
+    const playAudio = (index: number) => {
+        // If audio is playing for this verse, pause it
+        if (isPlaying && playingVerseIndex === index && audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        // If there's any playing audio, stop it
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+            setIsPlaying(false);
+        }
+
+        // Play new audio
+        const audio = new Audio(verses[index]?.audio?.primary);
+        audioRef.current = audio;
+        audio.addEventListener('ended', () => handleAudioEnd(index));
+        audio.play();
+        setIsPlaying(true);
+        setPlayingVerseIndex(index);
+    };
+
+    // Stop audio when unmounting component
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+                setIsPlaying(false);
+            }
+        };
+    }, []);
 
     console.log({ verses })
     return (
@@ -187,18 +259,17 @@ const SurahPage: React.FC = () => {
                             <div className="flex items-center justify-center gap-2 mb-4">
                                 <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
                                 <button
-                                    onClick={() => {
-                                        if (audioRef.current) {
-                                            audioRef.current.pause();
-                                            audioRef.current = null;
-                                        }
-                                        const audio = new Audio(item?.audio?.primary);
-                                        audioRef.current = audio;
-                                        audio.play();
-                                    }}
-                                    className="p-2 rounded-full bg-green-100 text-black"
+                                    onClick={() => playAudio(i)}
+                                    className={`p-2 rounded-full ${isPlaying && playingVerseIndex === i
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-green-100 text-black'
+                                        }`}
                                 >
-                                    Dengar       <span role="img" aria-label="play">🔊</span>
+                                    {isPlaying && playingVerseIndex === i ? (
+                                        <>Stop <span role="img" aria-label="pause">⏸️</span></>
+                                    ) : (
+                                        <>Dengar <span role="img" aria-label="play">🔊</span></>
+                                    )}
                                 </button>
                             </div>
                             <h2 className="text-3xl font-bold mb-2 text-black leading-relaxed">{item?.text?.arab}</h2>
@@ -213,3 +284,4 @@ const SurahPage: React.FC = () => {
 };
 
 export default SurahPage;
+
