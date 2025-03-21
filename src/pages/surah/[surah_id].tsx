@@ -26,6 +26,7 @@ const SurahPage: React.FC = () => {
     const [verses, setVerses] = useState<Verse[]>([])
     const [currentVerseIndex, setCurrentVerseIndex] = useState<number>(0)
     const [isUserScrolling, setIsUserScrolling] = useState(false)
+    const [selectedVerse, setSelectedVerse] = useState(0)
 
     useEffect(() => {
         // Create intersection observer
@@ -104,20 +105,45 @@ const SurahPage: React.FC = () => {
     return (
         <div className="h-screen w-screen bg-gray-100 overflow-hidden">
             {/* Optional: Display current verse number with navigation buttons */}
-            <div className="fixed top-4 right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
+            <div className="fixed top-[75px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
                 <button
                     onClick={() => scrollToVerse(Math.max(0, currentVerseIndex - 1))}
                     className="hover:opacity-75"
                 >
                     ←
                 </button>
-                Verse {currentVerseIndex + 1} of {verses.length}
+                Ayat {currentVerseIndex + 1} dari {verses.length}
                 <button
                     onClick={() => scrollToVerse(Math.min(verses.length - 1, currentVerseIndex + 1))}
                     className="hover:opacity-75"
                 >
                     →
                 </button>
+            </div>
+
+            {/* Fixed verse input in bottom right */}
+            <div className="fixed bottom-4 right-4 bg-white border-2 text-black px-4 py-2 rounded-full flex items-center gap-2">
+                <input
+                    type="number"
+                    min={1}
+                    max={verses.length}
+                    className="w-16 px-2 py-1 text-black rounded-md"
+                    placeholder="Ayat"
+                    onChange={(e) => {
+                        const value = parseInt((e.target as HTMLInputElement).value)
+                        setSelectedVerse(value)
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            const value = parseInt((e.target as HTMLInputElement).value)
+                            if (value >= 1 && value <= verses.length) {
+                                scrollToVerse(value - 1)
+                                    ; (e.target as HTMLInputElement).value = ''
+                            }
+                        }
+                    }}
+                />
+                <div className="text-sm" onClick={() => scrollToVerse(selectedVerse - 1)}>Go</div>
             </div>
 
             {/* Scroll container with vertical snap behavior */}
@@ -132,7 +158,7 @@ const SurahPage: React.FC = () => {
                             <h3 className='text-black mb-4 bg-green-50'> {item?.number?.inSurah}</h3>
                             <h2 className="text-3xl font-bold mb-2 text-black leading-relaxed">{item?.text?.arab}</h2>
                             {item?.text?.arab?.length < 500 && <p className="text-gray-500">{item?.text?.transliteration?.en}</p>}
-                            {item?.text?.arab?.length < 200 && <p className="text-gray-700 mt-4 font-semibold">{item?.translation?.id}</p>}
+                            {item?.text?.arab?.length < 200 && <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>}
                         </div>
                     </div>
                 ))}
