@@ -200,6 +200,9 @@ const SurahPage: React.FC = () => {
     return (
         <div className="h-screen w-screen bg-gray-100 overflow-hidden">
             {/* Optional: Display current verse number with navigation buttons */}
+            <div className="fixed top-[25px] left-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2" onClick={() => router.push("/")}>
+                List Surat
+            </div>
             <div className="fixed top-[25px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
                 <div className="flex flex-col">
 
@@ -274,7 +277,7 @@ const SurahPage: React.FC = () => {
                                 <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
 
                             </div>
-                            {!showTranslate ? <h2 className={`${item?.text?.arab.length < 520 ? "text-3xl" : "text-2xl"} font-bold mb-2 text-black leading-relaxed`} onClick={() => setShowTranslate(!showTranslate)}>{item?.text?.arab}</h2>
+                            {!showTranslate ? <h2 className={`${item?.text?.arab.length < 510 ? "text-[28px]" : "text-2xl"} font-bold mb-2 text-black leading-relaxed`} onClick={() => setShowTranslate(!showTranslate)}>{item?.text?.arab}</h2>
                                 : <div onClick={() => setShowTranslate(!showTranslate)}>
                                     <p className="text-gray-500">{item?.text?.transliteration?.en}</p>
                                     <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>
