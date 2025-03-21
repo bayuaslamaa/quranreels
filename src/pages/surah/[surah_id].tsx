@@ -30,6 +30,8 @@ const SurahPage: React.FC = () => {
     const scrollingRef = React.useRef(false);
     // Add state to track which verse is currently playing
     const [playingVerseIndex, setPlayingVerseIndex] = useState<number | null>(null);
+    // Add a ref to track if we're in auto-play sequence
+    const autoPlayRef = React.useRef(false);
 
     const router = useRouter()
     const { surah_id, verse } = router?.query
@@ -52,11 +54,13 @@ const SurahPage: React.FC = () => {
                         setIsUserScrolling(true)
                         setSelectedVerse(0)
 
-                        // Only stop audio if manual scrolling (not auto-scroll)
-                        if (!scrollingRef.current && audioRef.current) {
+                        // Only stop audio if it's manual scrolling (not auto-scroll)
+                        if (!scrollingRef.current && !autoPlayRef.current && audioRef.current) {
                             audioRef.current.pause();
                             audioRef.current = null;
                             setIsPlaying(false);
+                            setPlayingVerseIndex(null);
+                            autoPlayRef.current = false;
                         }
                     }
                 })
@@ -138,45 +142,81 @@ const SurahPage: React.FC = () => {
         }
     }, [currentVerseIndex])
 
-    // Modify handleAudioEnd to use setTimeout for better scroll-then-play sequence
+    // Modify handleAudioEnd to better handle the auto-play sequence
     const handleAudioEnd = (currentIndex: number) => {
         setIsPlaying(false);
         setPlayingVerseIndex(null);
         audioRef.current = null;
 
         if (currentIndex < verses.length - 1) {
+            autoPlayRef.current = true;
             scrollingRef.current = true;
             scrollToVerse(currentIndex + 1);
 
+            // Increase timeout to ensure scroll completes
             setTimeout(() => {
-                const nextAudio = new Audio(verses[currentIndex + 1]?.audio?.primary);
-                audioRef.current = nextAudio;
-                nextAudio.addEventListener('ended', () => handleAudioEnd(currentIndex + 1));
-                nextAudio.play();
-                setIsPlaying(true);
-                setPlayingVerseIndex(currentIndex + 1);
+                if (autoPlayRef.current) {
+                    const nextAudio = new Audio(verses[currentIndex + 1]?.audio?.primary);
+                    audioRef.current = nextAudio;
+                    nextAudio.addEventListener('ended', () => handleAudioEnd(currentIndex + 1));
+                    nextAudio.play();
+                    setIsPlaying(true);
+                    setPlayingVerseIndex(currentIndex + 1);
+                }
                 scrollingRef.current = false;
-            }, 1000);
+            }, 500);
         }
     };
 
-    // Modify playAudio function to handle pause/play
+    // Update intersection observer to respect auto-play sequence
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const index = Number(entry.target.getAttribute('data-index'));
+                        setCurrentVerseIndex(index);
+                        setIsUserScrolling(true);
+                        setSelectedVerse(0);
+
+                        // Only stop audio if it's manual scrolling (not auto-scroll)
+                        if (!scrollingRef.current && !autoPlayRef.current && audioRef.current) {
+                            audioRef.current.pause();
+                            audioRef.current = null;
+                            setIsPlaying(false);
+                            setPlayingVerseIndex(null);
+                            autoPlayRef.current = false;
+                        }
+                    }
+                });
+            },
+            { threshold: 0.7 }
+        );
+
+        document.querySelectorAll('.verse-container').forEach((el) => {
+            observer.observe(el);
+        });
+
+        return () => observer.disconnect();
+    }, [verses]);
+
+    // Update playAudio to handle manual play/pause
     const playAudio = (index: number) => {
-        // If audio is playing for this verse, pause it
+        autoPlayRef.current = false; // Reset auto-play when manually controlling audio
+
         if (isPlaying && playingVerseIndex === index && audioRef.current) {
             audioRef.current.pause();
             setIsPlaying(false);
+            setPlayingVerseIndex(null);
             return;
         }
 
-        // If there's any playing audio, stop it
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
             setIsPlaying(false);
         }
 
-        // Play new audio
         const audio = new Audio(verses[index]?.audio?.primary);
         audioRef.current = audio;
         audio.addEventListener('ended', () => handleAudioEnd(index));
@@ -185,13 +225,15 @@ const SurahPage: React.FC = () => {
         setPlayingVerseIndex(index);
     };
 
-    // Stop audio when unmounting component
+    // Add cleanup for component unmount
     useEffect(() => {
         return () => {
+            autoPlayRef.current = false;
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current = null;
                 setIsPlaying(false);
+                setPlayingVerseIndex(null);
             }
         };
     }, []);
