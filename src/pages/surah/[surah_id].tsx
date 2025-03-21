@@ -16,9 +16,14 @@ interface Verse {
     translation: {
         id: string;
     };
+    audio: {
+        primary: string;
+    };
 }
 
 const SurahPage: React.FC = () => {
+    // Add this ref to store current audio instance
+    const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     const router = useRouter()
     const { surah_id, verse } = router?.query
@@ -27,6 +32,7 @@ const SurahPage: React.FC = () => {
     const [currentVerseIndex, setCurrentVerseIndex] = useState<number>(0)
     const [isUserScrolling, setIsUserScrolling] = useState(false)
     const [selectedVerse, setSelectedVerse] = useState(0)
+    const [surahName, setSurahName] = useState("")
 
     useEffect(() => {
         // Create intersection observer
@@ -37,6 +43,7 @@ const SurahPage: React.FC = () => {
                         const index = Number(entry.target.getAttribute('data-index'))
                         setCurrentVerseIndex(index)
                         setIsUserScrolling(true)
+                        setSelectedVerse(0)
                     }
                 })
             },
@@ -65,11 +72,23 @@ const SurahPage: React.FC = () => {
         setIsUserScrolling(false)
     }, [verses, verse])
 
-    // Function to scroll to a specific verse
+    // Modify the scrollToVerse function to stop audio
     const scrollToVerse = (index: number) => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
         const element = document.querySelector(`[data-index="${index}"]`)
         element?.scrollIntoView({ behavior: 'smooth' })
     }
+
+    // Add effect to stop audio on verse change
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+    }, [currentVerseIndex]);
 
     useEffect(() => {
         async function fetchVerses() {
@@ -77,6 +96,9 @@ const SurahPage: React.FC = () => {
             try {
                 const response = await fetch(`https://api.quran.gading.dev/surah/${surah_id}`);
                 const data = await response.json();
+                console.log({ data })
+                const surahName = data?.data?.name?.transliteration?.id
+                setSurahName(surahName)
                 setVerses(data?.data?.verses); // Assuming the API returns data in a 'data' property
             } catch (error) {
                 console.error('Error fetching verses:', error);
@@ -105,24 +127,31 @@ const SurahPage: React.FC = () => {
     return (
         <div className="h-screen w-screen bg-gray-100 overflow-hidden">
             {/* Optional: Display current verse number with navigation buttons */}
-            <div className="fixed top-[75px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
-                <button
-                    onClick={() => scrollToVerse(Math.max(0, currentVerseIndex - 1))}
-                    className="hover:opacity-75"
-                >
-                    ←
-                </button>
-                Ayat {currentVerseIndex + 1} dari {verses.length}
-                <button
-                    onClick={() => scrollToVerse(Math.min(verses.length - 1, currentVerseIndex + 1))}
-                    className="hover:opacity-75"
-                >
-                    →
-                </button>
+            <div className="fixed top-[25px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
+                <div className="flex flex-col">
+
+                    <p className='text-center'>{surahName}</p>
+                    <div>
+
+                        <button
+                            onClick={() => scrollToVerse(Math.max(0, currentVerseIndex - 1))}
+                            className="hover:opacity-75"
+                        >
+                            ←
+                        </button>
+                        Ayat {currentVerseIndex + 1} dari {verses.length}
+                        <button
+                            onClick={() => scrollToVerse(Math.min(verses.length - 1, currentVerseIndex + 1))}
+                            className="hover:opacity-75"
+                        >
+                            →
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Fixed verse input in bottom right */}
-            <div className="fixed bottom-4 right-4 bg-white border-2 text-black px-4 py-2 rounded-full flex items-center gap-2">
+            <div className="fixed bottom-[85px] right-4 bg-white border-2 text-black px-4 py-2 rounded-full flex items-center gap-2">
                 <input
                     type="number"
                     min={1}
@@ -155,10 +184,26 @@ const SurahPage: React.FC = () => {
                         className="verse-container h-screen w-screen flex flex-col items-center justify-center snap-start bg-white border-b border-gray-200"
                     >
                         <div className="p-4 text-center">
-                            <h3 className='text-black mb-4 bg-green-50'> {item?.number?.inSurah}</h3>
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                                <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
+                                <button
+                                    onClick={() => {
+                                        if (audioRef.current) {
+                                            audioRef.current.pause();
+                                            audioRef.current = null;
+                                        }
+                                        const audio = new Audio(item?.audio?.primary);
+                                        audioRef.current = audio;
+                                        audio.play();
+                                    }}
+                                    className="p-2 rounded-full bg-green-100 text-black"
+                                >
+                                    Dengar       <span role="img" aria-label="play">🔊</span>
+                                </button>
+                            </div>
                             <h2 className="text-3xl font-bold mb-2 text-black leading-relaxed">{item?.text?.arab}</h2>
-                            {item?.text?.arab?.length < 500 && <p className="text-gray-500">{item?.text?.transliteration?.en}</p>}
-                            {item?.text?.arab?.length < 200 && <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>}
+                            {item?.text?.arab?.length < 180 && <p className="text-gray-500">{item?.text?.transliteration?.en}</p>}
+                            {item?.text?.arab?.length < 470 && <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>}
                         </div>
                     </div>
                 ))}
