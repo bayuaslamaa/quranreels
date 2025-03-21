@@ -257,7 +257,6 @@ const SurahPage: React.FC = () => {
                     >
                         <div className="p-4 text-center">
                             <div className="flex items-center justify-center gap-2 mb-4">
-                                <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
                                 <button
                                     onClick={() => playAudio(i)}
                                     className={`p-2 rounded-full ${isPlaying && playingVerseIndex === i
@@ -271,6 +270,8 @@ const SurahPage: React.FC = () => {
                                         <>Dengar <span role="img" aria-label="play">🔊</span></>
                                     )}
                                 </button>
+                                <h3 className='text-black bg-green-50'> {item?.number?.inSurah}</h3>
+
                             </div>
                             <h2 className="text-3xl font-bold mb-2 text-black leading-relaxed">{item?.text?.arab}</h2>
                             {item?.text?.arab?.length < 180 && <p className="text-gray-500">{item?.text?.transliteration?.en}</p>}
