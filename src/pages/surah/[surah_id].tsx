@@ -16,6 +16,7 @@ interface Verse {
     };
     meta: {
         juz: number
+        page: number
     }
     translation: {
         id: string;
@@ -39,7 +40,7 @@ const SurahPage: React.FC = () => {
 
     const router = useRouter()
     const { surah_id, verse } = router?.query
-    console.log({ surah_id, verse })
+    // console.log({ surah_id, verse })
     const [verses, setVerses] = useState<Verse[]>([])
     const [currentVerseIndex, setCurrentVerseIndex] = useState<number>(0)
     const [isUserScrolling, setIsUserScrolling] = useState(false)
@@ -80,7 +81,7 @@ const SurahPage: React.FC = () => {
         return () => observer.disconnect()
     }, [verses]) // Re-run when verses change
 
-    console.log({ currentVerseIndex })
+    // console.log({ currentVerseIndex })
 
     // Add this effect to handle initial scroll when verses are loaded
     useEffect(() => {
@@ -125,7 +126,7 @@ const SurahPage: React.FC = () => {
             try {
                 const response = await fetch(`https://api.quran.gading.dev/surah/${surah_id}`);
                 const data = await response.json();
-                console.log({ data })
+                // console.log({ data })
                 const surahName = data?.data?.name?.transliteration?.id
                 setSurahName(surahName)
                 setVerses(data?.data?.verses); // Assuming the API returns data in a 'data' property
@@ -283,7 +284,7 @@ const SurahPage: React.FC = () => {
         })
     }
 
-    console.log({ verses })
+    // console.log({ verses })
     return (
         <div className="h-screen w-screen bg-gray-100 overflow-hidden">
             {/* Optional: Display current verse number with navigation buttons */}
@@ -293,7 +294,7 @@ const SurahPage: React.FC = () => {
             <div className="fixed top-[25px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
                 <div className="flex flex-col">
 
-                    <p className='text-center'>{surahName} (Juz {verses?.[currentVerseIndex + 1]?.meta?.juz})</p>
+                    <p className='text-center'>{surahName} (Juz {verses?.[currentVerseIndex + 1]?.meta?.juz} [{verses?.[currentVerseIndex + 1]?.meta?.page}])</p>
                     <div>
 
                         <button
@@ -331,8 +332,16 @@ const SurahPage: React.FC = () => {
                         if (e.key === 'Enter') {
                             const value = parseInt((e.target as HTMLInputElement).value)
                             if (value >= 1 && value <= verses.length) {
-                                scrollToVerse(value - 1)
-                                    ; (e.target as HTMLInputElement).value = ''
+                                router.push(
+                                    {
+                                        pathname: router.pathname,
+                                        query: { surah_id, verse: value }
+                                    },
+                                    undefined,
+                                    { shallow: true } // Prevents unnecessary data fetching
+                                )
+                                // scrollToVerse(value - 1)
+                                //     ; (e.target as HTMLInputElement).value = ''
                             }
                         }
                     }}
