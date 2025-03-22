@@ -14,6 +14,9 @@ interface Verse {
             en: string;
         };
     };
+    meta: {
+        juz: number
+    }
     translation: {
         id: string;
     };
@@ -290,7 +293,7 @@ const SurahPage: React.FC = () => {
             <div className="fixed top-[25px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
                 <div className="flex flex-col">
 
-                    <p className='text-center'>{surahName}</p>
+                    <p className='text-center'>{surahName} (Juz {verses?.[currentVerseIndex + 1]?.meta?.juz})</p>
                     <div>
 
                         <button
@@ -300,7 +303,7 @@ const SurahPage: React.FC = () => {
                             ←
                         </button>
                         Ayat
-
+                        {" "}
                         <span className='font-semibold'>{currentVerseIndex + 1}</span> dari {verses.length}
                         <button
                             onClick={() => scrollToVerse(Math.min(verses.length - 1, currentVerseIndex + 1))}
