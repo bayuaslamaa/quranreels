@@ -123,13 +123,28 @@ const SurahPage: React.FC = () => {
     useEffect(() => {
         async function fetchVerses() {
             if (!surah_id) return
+
             try {
+                // Check localStorage first
+                const cachedData = localStorage.getItem(`surah_${surah_id}`)
+
+                if (cachedData) {
+                    const parsedData = JSON.parse(cachedData)
+                    setSurahName(parsedData.name.transliteration.id)
+                    setVerses(parsedData.verses)
+                    return
+                }
+
+                // If not in cache, fetch from API
                 const response = await fetch(`https://api.quran.gading.dev/surah/${surah_id}`);
                 const data = await response.json();
-                // console.log({ data })
-                const surahName = data?.data?.name?.transliteration?.id
-                setSurahName(surahName)
-                setVerses(data?.data?.verses); // Assuming the API returns data in a 'data' property
+
+                // Save to localStorage
+                localStorage.setItem(`surah_${surah_id}`, JSON.stringify(data.data))
+
+                // Update state
+                setSurahName(data?.data?.name?.transliteration?.id)
+                setVerses(data?.data?.verses)
             } catch (error) {
                 console.error('Error fetching verses:', error);
             }
