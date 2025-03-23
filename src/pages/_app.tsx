@@ -1,11 +1,13 @@
 import "@/styles/globals.css";
 import { useEffect } from 'react';
-import { Router } from 'next/router';
+import { Router, useRouter } from 'next/router';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
 import type { AppProps } from 'next/app';
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const showBottomNav = !router.pathname.includes('surah');
 
   useEffect(() => {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY as string, {
@@ -29,7 +31,52 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <PostHogProvider client={posthog}>
-      <a
+
+      <Component {...pageProps} />
+      {showBottomNav ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 px-4">
+          <button
+            onClick={() => router.push('/')}
+            className={`flex flex-col items-center justify-center flex-1 h-full ${router.pathname === "/" ? "text-black" : ""}`}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+              />
+            </svg>
+            <span className="text-sm mt-1">List</span>
+          </button>
+          <button
+            onClick={() => router.push('/about')}
+            className={`flex flex-col items-center justify-center flex-1 h-full ${router.pathname !== "/" ? "text-black" : ""}`}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="text-sm mt-1">About</span>
+          </button>
+        </div>
+      ) : <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
@@ -45,8 +92,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z" />
         </svg>
         <span>Feedback & Request</span>
-      </a>
-      <Component {...pageProps} />
+      </a>}
     </PostHogProvider>
   );
 }
