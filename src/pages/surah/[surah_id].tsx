@@ -398,7 +398,10 @@ const SurahPage: React.FC = () => {
                             <small className='text-black'>Tap untuk munculkan {!showTranslate ? "terjemahan dan transliterasi" : "ayat"}</small>
 
                         </div>
-                        {verses.length - 1 === currentVerseIndex && <button className='bg-green-100 p-2 rounded-full text-black' onClick={() => router.push(`/surah/${+surah_id + 1}?verse=1`)}>Surat Selanjutnya</button>}
+                        {verses.length - 1 === currentVerseIndex && <button className='bg-green-100 p-2 rounded-full text-black' onClick={() => {
+                            if (!surah_id) return
+                            router.push(`/surah/${+surah_id + 1}?verse=1`)
+                        }}>Surat Selanjutnya</button>}
                     </div>
                 ))}
             </div>
