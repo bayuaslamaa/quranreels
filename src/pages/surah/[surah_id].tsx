@@ -40,7 +40,7 @@ const SurahPage: React.FC = () => {
 
     const router = useRouter()
     const { surah_id, verse } = router?.query
-    // console.log({ surah_id, verse })
+    console.log({ surah_id, verse })
     const [verses, setVerses] = useState<Verse[]>([])
     const [currentVerseIndex, setCurrentVerseIndex] = useState<number>(0)
     const [isUserScrolling, setIsUserScrolling] = useState(false)
@@ -81,7 +81,7 @@ const SurahPage: React.FC = () => {
         return () => observer.disconnect()
     }, [verses]) // Re-run when verses change
 
-    // console.log({ currentVerseIndex })
+    console.log({ currentVerseIndex })
 
     // Add this effect to handle initial scroll when verses are loaded
     useEffect(() => {
@@ -299,7 +299,7 @@ const SurahPage: React.FC = () => {
         })
     }
 
-    // console.log({ verses })
+    console.log({ verses })
     return (
         <div className="h-screen w-screen bg-gray-100 overflow-hidden">
             {/* Optional: Display current verse number with navigation buttons */}
@@ -309,7 +309,7 @@ const SurahPage: React.FC = () => {
             <div className="fixed top-[25px] right-4 bg-black text-white px-4 py-2 rounded-full flex items-center gap-2">
                 <div className="flex flex-col">
 
-                    <p className='text-center'>{surahName} (Juz {verses?.[currentVerseIndex + 1]?.meta?.juz} [{verses?.[currentVerseIndex + 1]?.meta?.page}])</p>
+                    <p className='text-center'>{surahName} (Juz {verses?.[currentVerseIndex]?.meta?.juz} [{verses?.[currentVerseIndex]?.meta?.page}])</p>
                     <div>
 
                         <button
@@ -396,7 +396,9 @@ const SurahPage: React.FC = () => {
                                     <p className="text-gray-700 mt-4 font-semibold">{item?.number?.inSurah}. {item?.translation?.id}</p>
                                 </div>}
                             <small className='text-black'>Tap untuk munculkan {!showTranslate ? "terjemahan dan transliterasi" : "ayat"}</small>
+
                         </div>
+                        {verses.length - 1 === currentVerseIndex && <button className='bg-green-100 p-2 rounded-full text-black' onClick={() => router.push(`/surah/${+surah_id + 1}?verse=1`)}>Surat Selanjutnya</button>}
                     </div>
                 ))}
             </div>
